@@ -1,13 +1,14 @@
 import streamlit as st
 import openai
 
-if "MY_API_KEY" in st.secrets:
+# Check if the key is available under "general"
+if "general" in st.secrets and "MY_API_KEY" in st.secrets["general"]:
     st.write("DEBUG: MY_API_KEY is loaded.")
 else:
     st.write("DEBUG: MY_API_KEY is NOT loaded.")
 
-openai.api_key = st.secrets.get("MY_API_KEY", None)
-
+# Set the OpenAI API key using the key from the "general" section
+openai.api_key = st.secrets["general"]["MY_API_KEY"]
 
 st.title("AVS Summary Generator")
 
