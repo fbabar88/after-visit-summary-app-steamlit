@@ -3,7 +3,7 @@ import openai
 import os
 
 # Set your OpenAI API key. For security, consider using Streamlit Secrets for production.
-openai.api_key = os.getenv("OPENAI_API_KEY", "your-api-key-here")
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 st.title("AVS Summary Generator")
 
