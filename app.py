@@ -2,16 +2,7 @@ import streamlit as st
 import openai
 import os
 
-# Debugging: Check if OPENAI_API_KEY is loaded
-if "OPENAI_API_KEY" in st.secrets:
-    st.write("DEBUG: OPENAI_API_KEY is loaded.")
-else:
-    st.write("DEBUG: OPENAI_API_KEY is NOT loaded.")
-
 # Set your OpenAI API key
-openai.api_key = st.secrets["OPENAI_API_KEY"]
-
-# Set your OpenAI API key. For security, consider using Streamlit Secrets for production.
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 st.title("AVS Summary Generator")
