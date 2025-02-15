@@ -1,12 +1,6 @@
 import streamlit as st
 import openai
 
-# Check if the key is available under "general"
-if "general" in st.secrets and "MY_API_KEY" in st.secrets["general"]:
-    st.write("DEBUG: MY_API_KEY is loaded.")
-else:
-    st.write("DEBUG: MY_API_KEY is NOT loaded.")
-
 # Set the OpenAI API key using the key from the "general" section
 openai.api_key = st.secrets["general"]["MY_API_KEY"]
 
