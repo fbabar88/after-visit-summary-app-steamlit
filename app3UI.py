@@ -3,7 +3,7 @@ import openai
 from fpdf import FPDF
 from io import BytesIO
 
-# --- Custom CSS for UI Style and Print ---
+# --- Custom CSS for UI and Print ---
 st.markdown(
     """
     <style>
@@ -70,18 +70,29 @@ def build_prompt(inputs: dict) -> str:
         f"- Kidney Function Trend: {inputs['kidney_trend']}",
         f"- Blood Pressure Status: {inputs['bp_status']}",
         f"- BP Reading: {inputs['bp_reading']}",
-        f"- Diabetes Control: {inputs['diabetes_status']}",
-        f"- A1c Level: {inputs['a1c_level']}",
-        f"- Labs Review: {inputs['labs_review']}"
     ]
-    # Include labs only if reviewed
+    # For diabetes, only include details if A1c is provided.
+    if inputs["a1c_level"].strip() != "":
+        lines.append(f"- Diabetes Control: {inputs['diabetes_status']}")
+        lines.append(f"- A1c Level: {inputs['a1c_level']}")
+    else:
+        lines.append("- Diabetes: Not provided")
+    
+    lines.append(f"- Labs Review: {inputs['labs_review']}")
+    # Only include lab details if labs are reviewed and any category was selected.
     if inputs["labs_review"] in ["Reviewed and Stable", "Reviewed and Unstable"]:
+        lab_lines = []
         if inputs["anemia_checked"]:
-            lines.append(f"  - Anemia: Hemoglobin: {inputs['hemoglobin_status']}, Iron: {inputs['iron_status']}")
+            lab_lines.append(f"Anemia: Hemoglobin: {inputs['hemoglobin_status']}, Iron: {inputs['iron_status']}")
         if inputs["electrolyte_checked"]:
-            lines.append(f"  - Electrolyte: Potassium: {inputs['potassium_status']}, Bicarbonate: {inputs['bicarbonate_status']}")
+            lab_lines.append(f"Electrolyte: Potassium: {inputs['potassium_status']}, Bicarbonate: {inputs['bicarbonate_status']}")
         if inputs["bone_checked"]:
-            lines.append(f"  - Bone Mineral Disease: PTH: {inputs['pth_status']}, Vitamin D: {inputs['vitamin_d_status']}")
+            lab_lines.append(f"Bone Mineral Disease: PTH: {inputs['pth_status']}, Vitamin D: {inputs['vitamin_d_status']}")
+        if lab_lines:
+            lines.append("Labs Details:")
+            for lab in lab_lines:
+                lines.append(f"  - {lab}")
+    # Medication & Follow-up
     lines.append(f"- Medication Change: {inputs['med_change']}")
     if inputs["med_change"] == "Yes" and inputs["med_change_types"]:
         lines.append(f"  - Medication Changes: {', '.join(inputs['med_change_types'])}")
@@ -128,22 +139,19 @@ def main():
         else:
             bp_reading = "At Goal"
         diabetes_status = st.radio("Diabetes Control", ["Controlled", "Uncontrolled"], key="diabetes_status")
-        if diabetes_status == "Uncontrolled":
-            a1c_level = st.text_input("Enter A1c Level", key="a1c_level")
-        else:
-            a1c_level = "Controlled"
+        # Allow A1c level to be optional. If not provided, it's not interpreted.
+        a1c_level = st.text_input("Enter A1c Level (if available)", key="a1c_level")
     
     # Labs
     with st.sidebar.expander("Labs", expanded=True):
         labs_review = st.selectbox("Labs Review", ["Reviewed and Stable", "Reviewed and Unstable", "Not Reviewed", "N/A"])
-        # Initialize default lab values
+        # Initialize defaults
         hemoglobin_status = "N/A"
         iron_status = "N/A"
         potassium_status = "N/A"
         bicarbonate_status = "N/A"
         pth_status = "N/A"
         vitamin_d_status = "N/A"
-        # Flags for categories
         anemia_checked = False
         electrolyte_checked = False
         bone_checked = False
@@ -206,6 +214,9 @@ def main():
             "bicarbonate_status": bicarbonate_status,
             "pth_status": pth_status,
             "vitamin_d_status": vitamin_d_status,
+            "anemia_checked": anemia_checked,
+            "electrolyte_checked": electrolyte_checked,
+            "bone_checked": bone_checked,
             "med_change": med_change,
             "med_change_types": med_change_types,
             "followup_appointment": followup_appointment
