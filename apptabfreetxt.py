@@ -2,8 +2,30 @@ import streamlit as st
 import openai
 from fpdf import FPDF
 
-# Set the OpenAI API key using the secret from the 'general' section
-openai.api_key = st.secrets["general"]["MY_API_KEY"]
+
+# DEBUG: Print the entire st.secrets object
+st.write("DEBUG: st.secrets content:", st.secrets)
+
+# Check for a 'general' section and then the OPENAI_API_KEY inside it
+if "general" in st.secrets:
+    st.write("DEBUG: 'general' section found in st.secrets.")
+    if "OPENAI_API_KEY" in st.secrets["general"]:
+        st.write("DEBUG: OPENAI_API_KEY is loaded under 'general'.")
+        # Optionally, print a masked version of the key (for testing only)
+        key = st.secrets["general"]["OPENAI_API_KEY"]
+        st.write("DEBUG: API key (masked):", key[:6] + "..." + key[-4:])
+    else:
+        st.write("DEBUG: OPENAI_API_KEY is NOT loaded under 'general'.")
+else:
+    st.write("DEBUG: 'general' section is NOT found in st.secrets.")
+
+# Attempt to set the API key
+openai.api_key = st.secrets.get("general", {}).get("OPENAI_API_KEY", None)
+if openai.api_key is None:
+    st.write("DEBUG: OpenAI API key is not set.")
+else:
+    st.write("DEBUG: OpenAI API key has been set successfully (masked):", openai.api_key[:6] + "..." + openai.api_key[-4:])
+
 
 
 # --- Custom CSS for UI Style ---
