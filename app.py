@@ -1,20 +1,21 @@
 import streamlit as st
 import openai
 from fpdf import FPDF
+from io import BytesIO
 
-# --- Custom CSS for UI Style ---
+# --- Custom CSS for UI Style and Printing ---
 st.markdown(
     """
     <style>
-    /* Change background color for the main container */
+    /* Main container background */
     .reportview-container {
         background: #f5f5f5;
     }
-    /* Style the sidebar */
+    /* Sidebar styling */
     .sidebar .sidebar-content {
         background: #f0f0f0;
     }
-    /* Custom style for text areas */
+    /* Text area styling */
     .css-1aumxhk {
         background-color: #FFFFFF;
         border-radius: 5px;
@@ -28,6 +29,20 @@ st.markdown(
         border: none;
         border-radius: 4px;
     }
+    /* Print styles: hide everything except the #printable section */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable, #printable * {
+        visibility: visible;
+      }
+      #printable {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -37,13 +52,13 @@ st.markdown(
 openai.api_key = st.secrets["general"]["MY_API_KEY"]
 
 # --- PDF Generation Function ---
-def generate_pdf(text: str) -> bytes:
+def generate_pdf(text: str) -> BytesIO:
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     pdf.multi_cell(0, 10, text)
-    # Return the PDF as a byte string encoded in latin1
-    return pdf.output(dest="S").encode("latin1")
+    pdf_bytes = pdf.output(dest="S").encode("latin1")
+    return BytesIO(pdf_bytes)
 
 # --- Functions to Build Prompt and Generate Summary ---
 def build_prompt(inputs: dict) -> str:
@@ -103,6 +118,8 @@ def main():
     # Create tabs for structured input and free text command
     tab1, tab2 = st.tabs(["Structured Input", "Free Text Command"])
     
+    summary_text = ""
+    
     with tab1:
         st.markdown("### Enter Patient Details")
         inputs = {}
@@ -150,13 +167,13 @@ def main():
         if st.button("Generate AVS Summary (Structured)"):
             prompt = build_prompt(inputs)
             st.info("Generating AVS summary, please wait...")
-            summary = generate_avs_summary(prompt)
-            if summary:
-                st.text_area("Generated AVS Summary (editable):", value=summary, height=300)
-                pdf_bytes = generate_pdf(summary)
+            summary_text = generate_avs_summary(prompt)
+            if summary_text:
+                st.text_area("Generated AVS Summary (editable):", value=summary_text, height=300, key="structured_summary")
+                pdf_data = generate_pdf(summary_text)
                 st.download_button(
                     label="Download Summary as PDF",
-                    data=pdf_bytes,
+                    data=pdf_data.getvalue(),
                     file_name="AVS_Summary.pdf",
                     mime="application/pdf"
                 )
@@ -176,20 +193,32 @@ def main():
                     max_tokens=512,
                     temperature=0.7
                 )
-                free_text_summary = response.choices[0].message.content.strip()
-                st.text_area("Generated AVS Summary (editable):", value=free_text_summary, height=300)
-                pdf_bytes = generate_pdf(free_text_summary)
+                summary_text = response.choices[0].message.content.strip()
+                st.text_area("Generated AVS Summary (editable):", value=summary_text, height=300, key="freetext_summary")
+                pdf_data = generate_pdf(summary_text)
                 st.download_button(
                     label="Download Summary as PDF",
-                    data=pdf_bytes,
+                    data=pdf_data.getvalue(),
                     file_name="AVS_Summary.pdf",
                     mime="application/pdf"
                 )
             except Exception as e:
                 st.error(f"Error generating summary: {e}")
     
+    st.markdown("### Printable Summary")
+    # The following div isolates the summary for printing
+    if summary_text:
+        st.markdown(
+            f"""
+            <div id="printable">
+            <h3>Generated AVS Summary</h3>
+            <p>{summary_text.replace("\n", "<br>")}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     st.markdown("### Printing Instructions")
-    st.write("After generating the summary, use your browser's print function (Ctrl+P or Cmd+P) to print the results.")
+    st.write("To print only the AVS summary, use your browser's print function (Ctrl+P or Cmd+P). The page is styled to hide other elements during printing.")
 
 if __name__ == "__main__":
     main()
