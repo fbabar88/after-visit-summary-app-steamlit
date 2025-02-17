@@ -2,6 +2,10 @@ import streamlit as st
 import openai
 from fpdf import FPDF
 
+# Set the OpenAI API key using the secret from the 'general' section
+openai.api_key = st.secrets["general"]["MY_API_KEY"]
+
+
 # --- Custom CSS for UI Style ---
 st.markdown(
     """
@@ -32,9 +36,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-# Set the OpenAI API key using the secret from the 'general' section
-openai.api_key = st.secrets["general"]["MY_API_KEY"]
 
 
 # --- PDF Generation Function ---
