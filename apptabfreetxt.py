@@ -33,8 +33,9 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Set the OpenAI API key from the secrets stored under "general"
+# Set the OpenAI API key using the secret from the 'general' section
 openai.api_key = st.secrets["general"]["MY_API_KEY"]
+
 
 # --- PDF Generation Function ---
 def generate_pdf(text: str) -> bytes:
