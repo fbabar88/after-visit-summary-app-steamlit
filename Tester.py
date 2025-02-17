@@ -1,19 +1,55 @@
 import streamlit as st
+from datetime import date
 
-# Create a checkbox to toggle the visibility of the section
-show_section = st.sidebar.checkbox("Show Hypertension and Diabetes Details")
-if show_section:
-    st.sidebar.markdown("#### Hypertension and Diabetes")
-    # Blood Pressure
-    bp_status = st.sidebar.radio("Blood Pressure Status", options=["At Goal", "Above Goal"], key="bp_status")
-    if bp_status == "Above Goal":
-        bp_reading = st.sidebar.text_input("Enter Blood Pressure Reading", key="bp_reading")
-    else:
-        bp_reading = "At Goal"
-    
-    # Diabetes Control
-    diabetes_status = st.sidebar.radio("Diabetes Control", options=["Controlled", "Uncontrolled"], key="diabetes_status")
-    if diabetes_status == "Uncontrolled":
-        a1c_level = st.sidebar.text_input("Enter A1c Level", key="a1c_level")
-    else:
-        a1c_level = "Controlled"
+# --- Custom CSS for Sidebar Styling ---
+st.markdown(
+    """
+    <style>
+    /* Sidebar container styling */
+    .sidebar .sidebar-content {
+        background: #f0f0f0;
+        padding: 20px;
+    }
+    /* Style for sidebar buttons */
+    .stButton>button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Sidebar Widgets ---
+st.sidebar.title("Sidebar Sample")
+st.sidebar.markdown("This is a sample sidebar displaying various widgets.")
+
+# Selectbox
+option = st.sidebar.selectbox("Select an Option", ["Option 1", "Option 2", "Option 3"])
+
+# Number Input
+number = st.sidebar.number_input("Pick a Number", min_value=0, max_value=100, value=50)
+
+# Date Input
+selected_date = st.sidebar.date_input("Select a Date", date.today())
+
+# Color Picker
+color = st.sidebar.color_picker("Pick a Color", "#00f900")
+
+# Button
+if st.sidebar.button("Click Me"):
+    st.sidebar.write("Button was clicked!")
+
+# Display the selected values
+st.sidebar.markdown("### Results:")
+st.sidebar.write("Option Selected:", option)
+st.sidebar.write("Number:", number)
+st.sidebar.write("Date:", selected_date)
+st.sidebar.write("Color:", color)
+
+# --- Main Page (for reference) ---
+st.title("Main Page")
+st.write("All input widgets are in the sidebar!")
