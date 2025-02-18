@@ -1,107 +1,35 @@
-import streamlit as st
-from datetime import date
-
-st.sidebar.title("Patient Details Input")
-
-# --- CKD Stage ---
-with st.sidebar.expander("CKD Stage", expanded=True):
-    ckd_stage = st.selectbox("Select CKD Stage", ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"])
-
-# --- Kidney Function Status ---
-with st.sidebar.expander("Kidney Function Status", expanded=True):
-    kidney_trend = st.selectbox("Select Kidney Function Trend", ["Stable", "Worsening", "Improving", "N/A"])
-
-# --- Diabetes & Hypertension ---
-with st.sidebar.expander("Diabetes & Hypertension", expanded=True):
-    bp_status = st.radio("Blood Pressure Status", ["At Goal", "Above Goal"], key="bp_status")
-    if bp_status == "Above Goal":
-        bp_reading = st.text_input("Enter BP Reading", key="bp_reading")
+def build_prompt(inputs: dict) -> str:
+    lines = [
+        "You are a knowledgeable medical assistant. Based on the following patient data, generate a concise, plain language summary for the patient. Use 2-3 short paragraphs with bullet points highlighting key recommendations.",
+        "",
+        "Patient Data:",
+        f"- CKD Stage: {inputs['ckd_stage']}",
+        f"- Kidney Function Trend: {inputs['kidney_trend']}",
+        f"- Blood Pressure Status: {inputs['bp_status']} (Reading: {inputs['bp_reading']})",
+    ]
+    # Include diabetes details only if A1c is provided.
+    if inputs["a1c_level"].strip() != "":
+        lines.append(f"- Diabetes: {inputs['diabetes_status']} (A1c: {inputs['a1c_level']})")
     else:
-        bp_reading = "At Goal"
-    diabetes_status = st.radio("Diabetes Control", ["Controlled", "Uncontrolled"], key="diabetes_status")
-    if diabetes_status == "Uncontrolled":
-        a1c_level = st.text_input("Enter A1c Level", key="a1c_level")
-    else:
-        a1c_level = "Controlled"
-
-# --- Labs ---
-with st.sidebar.expander("Labs", expanded=True):
-    labs_review = st.selectbox("Labs Review", ["Reviewed and Stable", "Reviewed and Unstable", "Not Reviewed", "N/A"])
-    # Only show further lab inputs if labs are reviewed.
-    if labs_review in ["Reviewed and Stable", "Reviewed and Unstable"]:
-        st.markdown("#### Select Lab Categories")
-        # Anemia category (Hemoglobin & Iron)
-        anemia_checked = st.checkbox("Anemia (Hemoglobin & Iron)")
-        if anemia_checked:
-            st.markdown("**Anemia Category**")
-            hemoglobin_status = st.selectbox("Hemoglobin", ["Normal", "Low"], key="hemoglobin")
-            iron_status = st.selectbox("Iron", ["Normal", "Low"], key="iron")
-        else:
-            hemoglobin_status, iron_status = "N/A", "N/A"
-        # Electrolyte category (Potassium & Bicarbonate)
-        electrolyte_checked = st.checkbox("Electrolyte (Potassium & Bicarbonate)")
-        if electrolyte_checked:
-            st.markdown("**Electrolyte Category**")
-            potassium_status = st.selectbox("Potassium", ["Normal", "Elevated", "Low"], key="potassium")
-            bicarbonate_status = st.selectbox("Bicarbonate", ["Normal", "Low"], key="bicarbonate")
-        else:
-            potassium_status, bicarbonate_status = "N/A", "N/A"
-        # Bone Mineral Disease category (PTH & Vitamin D)
-        bone_checked = st.checkbox("Bone Mineral Disease (PTH & Vitamin D)")
-        if bone_checked:
-            st.markdown("**Bone Mineral Disease Category**")
-            pth_status = st.selectbox("PTH", ["Normal", "Elevated", "Low"], key="pth")
-            vitamin_d_status = st.selectbox("Vitamin D", ["Normal", "Low"], key="vitamin_d")
-        else:
-            pth_status, vitamin_d_status = "N/A", "N/A"
-    else:
-        labs_review = "Not Reviewed"
-        hemoglobin_status = iron_status = potassium_status = bicarbonate_status = pth_status = vitamin_d_status = "N/A"
-
-# --- Medication Change ---
-with st.sidebar.expander("Medication Change", expanded=True):
-    med_change = st.radio("Medication Change?", ["No", "Yes", "N/A"], key="med_change")
-    if med_change == "Yes":
-        med_change_types = st.multiselect(
-            "Select Medication Changes",
-            options=[
-                "BP Medication", 
-                "Diabetes Medication", 
-                "Diuretic", 
-                "Potassium Binder", 
-                "Iron Supplement", 
-                "ESA Therapy", 
-                "Vitamin D Supplement", 
-                "Bicarbonate Supplement"
-            ],
-            key="med_change_types"
-        )
-    else:
-        med_change_types = []
-
-# --- Follow-up ---
-with st.sidebar.expander("Follow-up", expanded=True):
-    followup_appointment = st.text_input("Enter Follow-up Appointment (e.g., 2 weeks)", key="followup")
-
-# --- Display a summary of selected inputs in the sidebar ---
-st.sidebar.markdown("### Summary of Inputs:")
-st.sidebar.write("**CKD Stage:**", ckd_stage)
-st.sidebar.write("**Kidney Function Trend:**", kidney_trend)
-with st.sidebar.expander("Diabetes & Hypertension Selections"):
-    st.write("Blood Pressure:", bp_status, "| BP Reading:", bp_reading)
-    st.write("Diabetes:", diabetes_status, "| A1c Level:", a1c_level)
-st.sidebar.write("**Labs Review:**", labs_review)
-if labs_review in ["Reviewed and Stable", "Reviewed and Unstable"]:
-    if anemia_checked:
-        st.sidebar.write("Anemia:", "Hemoglobin:", hemoglobin_status, "| Iron:", iron_status)
-    if electrolyte_checked:
-        st.sidebar.write("Electrolyte:", "Potassium:", potassium_status, "| Bicarbonate:", bicarbonate_status)
-    if bone_checked:
-        st.sidebar.write("Bone Mineral Disease:", "PTH:", pth_status, "| Vitamin D:", vitamin_d_status)
-st.sidebar.write("**Medication Change:**", med_change)
-if med_change == "Yes":
-    st.sidebar.write("Selected Medications:", med_change_types)
-st.sidebar.write("**Follow-up Appointment:**", followup_appointment)
-
-st.title("Main Page")
-st.write("All patient input widgets are in the sidebar. Use these inputs to generate your AVS summary.")
+        lines.append("- Diabetes: Not provided")
+    
+    lines.append(f"- Labs Review: {inputs['labs_review']}")
+    # Include lab details if labs are reviewed and any category is selected.
+    if inputs["labs_review"] in ["Reviewed and Stable", "Reviewed and Unstable"]:
+        lab_lines = []
+        if inputs["anemia_checked"]:
+            lab_lines.append(f"Anemia (Hemoglobin: {inputs['hemoglobin_status']}, Iron: {inputs['iron_status']})")
+        if inputs["electrolyte_checked"]:
+            lab_lines.append(f"Electrolytes (Potassium: {inputs['potassium_status']}, Bicarbonate: {inputs['bicarbonate_status']})")
+        if inputs["bone_checked"]:
+            lab_lines.append(f"Bone Health (PTH: {inputs['pth_status']}, Vitamin D: {inputs['vitamin_d_status']})")
+        if lab_lines:
+            lines.append("- Labs: " + "; ".join(lab_lines))
+    
+    lines.append(f"- Medication Change: {inputs['med_change']}")
+    if inputs["med_change"] == "Yes" and inputs["med_change_types"]:
+        lines.append(f"  - Medications: {', '.join(inputs['med_change_types'])}")
+    lines.append(f"- Follow-up Appointment: {inputs['followup_appointment']}")
+    lines.append("")
+    lines.append("Generate a concise, plain language summary in 2-3 short paragraphs with bullet points for the key recommendations.")
+    return "\n".join(lines)
