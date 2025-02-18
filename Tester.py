@@ -71,6 +71,9 @@ def build_prompt(inputs: dict) -> str:
         f"- Kidney Function Trend: {inputs['kidney_trend']}",
         f"- Blood Pressure Status: {inputs['bp_status']} (Reading: {inputs['bp_reading']})",
     ]
+    # Include proteinuria only if provided
+    if inputs["proteinuria_status"] != "Not Provided":
+        lines.append(f"- Proteinuria: {inputs['proteinuria_status']}")
     # Include diabetes details only if A1c is provided.
     if inputs["a1c_level"].strip() != "":
         lines.append(f"- Diabetes: {inputs['diabetes_status']} (A1c: {inputs['a1c_level']})")
@@ -138,6 +141,9 @@ def main():
                 bp_reading = "At Goal"
             diabetes_status = st.radio("Diabetes Control", ["Controlled", "Uncontrolled"], key="diabetes_status")
             a1c_level = st.text_input("Enter A1c Level (if available)", key="a1c_level")
+        # Proteinuria (New Section)
+        with st.sidebar.expander("Proteinuria", expanded=True):
+            proteinuria_status = st.radio("Proteinuria Status", ["Not Provided", "Stable", "Worsening"], key="proteinuria_status")
         # Labs
         with st.sidebar.expander("Labs", expanded=True):
             labs_review = st.selectbox("Labs Review", ["Reviewed and Stable", "Reviewed and Unstable", "Not Reviewed", "N/A"])
@@ -199,6 +205,7 @@ def main():
                 "bp_reading": bp_reading,
                 "diabetes_status": diabetes_status,
                 "a1c_level": a1c_level,
+                "proteinuria_status": proteinuria_status,
                 "labs_review": labs_review,
                 "hemoglobin_status": hemoglobin_status,
                 "iron_status": iron_status,
