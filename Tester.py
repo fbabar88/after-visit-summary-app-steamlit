@@ -119,7 +119,7 @@ def generate_avs_summary(prompt: str) -> str:
 
 # --- Reset Form Function ---
 def reset_form():
-    for key in st.session_state.keys():
+    for key in list(st.session_state.keys()):
         del st.session_state[key]
 
 # --- Main App Function ---
@@ -128,10 +128,10 @@ def main():
     
     # --- Sidebar: Form for Structured Inputs and Free Text Command ---
     with st.sidebar.form(key="input_form"):
-        st.sidebar.header("Patient Details")
+        st.header("Patient Details")
         
         # Basic Info
-        with st.sidebar.expander("Basic Info", expanded=True):
+        with st.expander("Basic Info", expanded=True):
             ckd_stage = st.selectbox(
                 "CKD Stage",
                 ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"],
@@ -152,7 +152,7 @@ def main():
             )
         
         # Advanced Options
-        with st.sidebar.expander("Advanced Options"):
+        with st.expander("Advanced Options"):
             st.markdown("#### Diabetes & Hypertension")
             bp_status = st.radio(
                 "Blood Pressure Status",
@@ -266,16 +266,16 @@ def main():
             )
         
         # Free Text Command (Optional)
-        st.sidebar.markdown("### Free Text Command (Optional)")
-        free_text_command = st.sidebar.text_area(
+        st.markdown("### Free Text Command (Optional)")
+        free_text_command = st.text_area(
             "Enter free text command to override structured input (if desired):",
             key="free_text"
         )
         
-        # Submit button for the form
-        submit_button = st.sidebar.form_submit_button(label="Generate AVS Summary")
+        # Submit button for the form (note: use st.form_submit_button without the sidebar prefix)
+        submit_button = st.form_submit_button(label="Generate AVS Summary")
     
-    # Quick Reset Button
+    # Quick Reset Button (outside the form)
     if st.sidebar.button("Reset Form"):
         reset_form()
         st.experimental_rerun()
