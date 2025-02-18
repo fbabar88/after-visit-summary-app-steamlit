@@ -72,7 +72,7 @@ def build_prompt(inputs: dict) -> str:
         f"- Blood Pressure Status: {inputs['bp_status']} (Reading: {inputs['bp_reading']})",
     ]
     # Include proteinuria only if provided
-    if inputs["proteinuria_status"] != "Not Provided":
+    if inputs["proteinuria_status"] != "Not Present":
         lines.append(f"- Proteinuria: {inputs['proteinuria_status']}")
     # Include diabetes details only if A1c is provided.
     if inputs["a1c_level"].strip() != "":
