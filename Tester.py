@@ -46,7 +46,8 @@ st.markdown(
 # --- Set OpenAI API Key ---
 openai.api_key = st.secrets["general"]["MY_API_KEY"]
 
-# --- PDF Generation Function ---
+# --- Cached PDF Generation Function ---
+@st.cache_data
 def generate_pdf(text: str) -> BytesIO:
     pdf = FPDF()
     pdf.add_page()
@@ -116,98 +117,201 @@ def generate_avs_summary(prompt: str) -> str:
         st.error(f"Error generating summary: {e}")
         return ""
 
+# --- Reset Form Function ---
+def reset_form():
+    for key in st.session_state.keys():
+        del st.session_state[key]
+
 # --- Main App Function ---
 def main():
     st.title("AVS Summary Generator")
     
-    # --- Sidebar: Structured Inputs and Free Text Command Always Visible ---
-    st.sidebar.title("Patient Details")
-    
-    # Basic Info: CKD Stage, Kidney Function, Proteinuria
-    with st.sidebar.expander("Basic Info", expanded=True):
-        ckd_stage = st.selectbox("CKD Stage", ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"], key="ckd")
-        kidney_trend = st.selectbox("Kidney Function Trend", ["Stable", "Worsening", "Improving", "N/A"], key="kidney")
-        proteinuria_status = st.radio("Proteinuria Status", ["Not Present", "Improving", "Worsening"], key="proteinuria")
-    
-    # Advanced Options: Diabetes & Hypertension, Labs, Medication Change, Follow-up
-    with st.sidebar.expander("Advanced Options"):
-        st.markdown("#### Diabetes & Hypertension")
-        bp_status = st.radio("Blood Pressure Status", ["At Goal", "Above Goal"], key="bp")
-        if bp_status == "Above Goal":
-            bp_reading = st.text_input("Enter BP Reading", key="bp_reading")
-        else:
-            bp_reading = "At Goal"
-        diabetes_status = st.radio("Diabetes Control", ["Controlled", "Uncontrolled"], key="diabetes")
-        a1c_level = st.text_input("Enter A1c Level (if available)", key="a1c")
+    # --- Sidebar: Form for Structured Inputs and Free Text Command ---
+    with st.sidebar.form(key="input_form"):
+        st.sidebar.header("Patient Details")
         
-        st.markdown("#### Labs")
-        st.markdown("Select lab values. If not reviewed, choose 'Not Reviewed'.")
-        # Anemia category
-        hemoglobin_status = st.selectbox("Hemoglobin", ["Not Reviewed", "Normal", "Low"], key="hemoglobin")
-        iron_status = st.selectbox("Iron", ["Not Reviewed", "Normal", "Low"], key="iron")
-        # Electrolytes category
-        sodium_status = st.selectbox("Sodium", ["Not Reviewed", "Normal", "High", "Low"], key="sodium")
-        potassium_status = st.selectbox("Potassium", ["Not Reviewed", "Normal", "Elevated", "Low"], key="potassium")
-        bicarbonate_status = st.selectbox("Bicarbonate", ["Not Reviewed", "Normal", "Low"], key="bicarbonate")
-        # Bone Mineral Health category
-        pth_status = st.selectbox("PTH", ["Not Reviewed", "Normal", "Elevated", "Low"], key="pth")
-        vitamin_d_status = st.selectbox("Vitamin D", ["Not Reviewed", "Normal", "Low"], key="vitamin_d")
-        calcium_status = st.selectbox("Calcium", ["Not Reviewed", "Normal", "High", "Low"], key="calcium")
-        
-        st.markdown("#### Medication Change & Follow-up")
-        med_change = st.radio("Medication Change?", ["No", "Yes", "N/A"], key="med")
-        if med_change == "Yes":
-            med_change_types = st.multiselect(
-                "Select Medication Changes", 
-                options=[
-                    "BP Medication", 
-                    "Diabetes Medication", 
-                    "Diuretic", 
-                    "Potassium Binder", 
-                    "Iron Supplement", 
-                    "ESA Therapy", 
-                    "Vitamin D Supplement", 
-                    "Bicarbonate Supplement"
-                ],
-                key="med_change_list"
+        # Basic Info
+        with st.sidebar.expander("Basic Info", expanded=True):
+            ckd_stage = st.selectbox(
+                "CKD Stage",
+                ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"],
+                key="ckd",
+                help="Select the stage of Chronic Kidney Disease."
             )
-        else:
-            med_change_types = []
-        followup_appointment = st.text_input("Enter Follow-up Appointment (e.g., 2 weeks)", key="followup")
+            kidney_trend = st.selectbox(
+                "Kidney Function Trend",
+                ["Stable", "Worsening", "Improving", "N/A"],
+                key="kidney",
+                help="Select the trend in kidney function over time."
+            )
+            proteinuria_status = st.radio(
+                "Proteinuria Status",
+                ["Not Present", "Improving", "Worsening"],
+                key="proteinuria",
+                help="Select the status of protein in urine."
+            )
+        
+        # Advanced Options
+        with st.sidebar.expander("Advanced Options"):
+            st.markdown("#### Diabetes & Hypertension")
+            bp_status = st.radio(
+                "Blood Pressure Status",
+                ["At Goal", "Above Goal"],
+                key="bp",
+                help="Select if blood pressure is at goal or above goal."
+            )
+            if bp_status == "Above Goal":
+                bp_reading = st.text_input(
+                    "Enter BP Reading",
+                    key="bp_reading",
+                    help="Enter blood pressure reading (e.g., 150/90)."
+                )
+            else:
+                bp_reading = "At Goal"
+            diabetes_status = st.radio(
+                "Diabetes Control",
+                ["Controlled", "Uncontrolled"],
+                key="diabetes",
+                help="Select diabetes control status."
+            )
+            a1c_level = st.text_input(
+                "Enter A1c Level (if available)",
+                key="a1c",
+                help="Enter the latest A1c level if available."
+            )
+            
+            st.markdown("#### Labs")
+            st.markdown("Select lab values. If not reviewed, choose 'Not Reviewed'.")
+            col1, col2 = st.columns(2)
+            with col1:
+                hemoglobin_status = st.selectbox(
+                    "Hemoglobin",
+                    ["Not Reviewed", "Normal", "Low"],
+                    key="hemoglobin",
+                    help="Select hemoglobin status."
+                )
+                iron_status = st.selectbox(
+                    "Iron",
+                    ["Not Reviewed", "Normal", "Low"],
+                    key="iron",
+                    help="Select iron status."
+                )
+                sodium_status = st.selectbox(
+                    "Sodium",
+                    ["Not Reviewed", "Normal", "High", "Low"],
+                    key="sodium",
+                    help="Select sodium level status."
+                )
+                potassium_status = st.selectbox(
+                    "Potassium",
+                    ["Not Reviewed", "Normal", "Elevated", "Low"],
+                    key="potassium",
+                    help="Select potassium level status."
+                )
+            with col2:
+                bicarbonate_status = st.selectbox(
+                    "Bicarbonate",
+                    ["Not Reviewed", "Normal", "Low"],
+                    key="bicarbonate",
+                    help="Select bicarbonate level status."
+                )
+                pth_status = st.selectbox(
+                    "PTH",
+                    ["Not Reviewed", "Normal", "Elevated", "Low"],
+                    key="pth",
+                    help="Select parathyroid hormone status."
+                )
+                vitamin_d_status = st.selectbox(
+                    "Vitamin D",
+                    ["Not Reviewed", "Normal", "Low"],
+                    key="vitamin_d",
+                    help="Select vitamin D status."
+                )
+                calcium_status = st.selectbox(
+                    "Calcium",
+                    ["Not Reviewed", "Normal", "High", "Low"],
+                    key="calcium",
+                    help="Select calcium level status."
+                )
+            
+            st.markdown("#### Medication Change & Follow-up")
+            med_change = st.radio(
+                "Medication Change?",
+                ["No", "Yes", "N/A"],
+                key="med",
+                help="Has there been any medication change?"
+            )
+            if med_change == "Yes":
+                med_change_types = st.multiselect(
+                    "Select Medication Changes", 
+                    options=[
+                        "BP Medication", 
+                        "Diabetes Medication", 
+                        "Diuretic", 
+                        "Potassium Binder", 
+                        "Iron Supplement", 
+                        "ESA Therapy", 
+                        "Vitamin D Supplement", 
+                        "Bicarbonate Supplement"
+                    ],
+                    key="med_change_list",
+                    help="Select the medications that have been changed."
+                )
+            else:
+                med_change_types = []
+            followup_appointment = st.text_input(
+                "Enter Follow-up Appointment (e.g., 2 weeks)",
+                key="followup",
+                help="Specify the follow-up appointment time."
+            )
+        
+        # Free Text Command (Optional)
+        st.sidebar.markdown("### Free Text Command (Optional)")
+        free_text_command = st.sidebar.text_area(
+            "Enter free text command to override structured input (if desired):",
+            key="free_text"
+        )
+        
+        # Submit button for the form
+        submit_button = st.sidebar.form_submit_button(label="Generate AVS Summary")
     
-    # Free Text Command (always visible)
-    st.sidebar.markdown("### Free Text Command (Optional)")
-    free_text_command = st.sidebar.text_area("Enter free text command to override structured input (if desired):", key="free_text")
+    # Quick Reset Button
+    if st.sidebar.button("Reset Form"):
+        reset_form()
+        st.experimental_rerun()
     
     # --- Main Page: Generate and Display Summary ---
-    if st.button("Generate AVS Summary"):
+    if submit_button:
         # Use free text command if provided, else use structured inputs.
         if free_text_command.strip() != "":
             prompt = free_text_command
         else:
             inputs = {
-                "ckd_stage": ckd_stage,
-                "kidney_trend": kidney_trend,
-                "proteinuria_status": proteinuria_status,
-                "bp_status": bp_status,
-                "bp_reading": bp_reading,
-                "diabetes_status": diabetes_status,
-                "a1c_level": a1c_level,
-                "hemoglobin_status": hemoglobin_status,
-                "iron_status": iron_status,
-                "sodium_status": sodium_status,
-                "potassium_status": potassium_status,
-                "bicarbonate_status": bicarbonate_status,
-                "pth_status": pth_status,
-                "vitamin_d_status": vitamin_d_status,
-                "calcium_status": calcium_status,
-                "med_change": med_change,
-                "med_change_types": med_change_types,
-                "followup_appointment": followup_appointment
+                "ckd_stage": st.session_state.get("ckd", "N/A"),
+                "kidney_trend": st.session_state.get("kidney", "N/A"),
+                "proteinuria_status": st.session_state.get("proteinuria", "Not Present"),
+                "bp_status": st.session_state.get("bp", "At Goal"),
+                "bp_reading": st.session_state.get("bp_reading", "At Goal"),
+                "diabetes_status": st.session_state.get("diabetes", "Controlled"),
+                "a1c_level": st.session_state.get("a1c", ""),
+                "hemoglobin_status": st.session_state.get("hemoglobin", "Not Reviewed"),
+                "iron_status": st.session_state.get("iron", "Not Reviewed"),
+                "sodium_status": st.session_state.get("sodium", "Not Reviewed"),
+                "potassium_status": st.session_state.get("potassium", "Not Reviewed"),
+                "bicarbonate_status": st.session_state.get("bicarbonate", "Not Reviewed"),
+                "pth_status": st.session_state.get("pth", "Not Reviewed"),
+                "vitamin_d_status": st.session_state.get("vitamin_d", "Not Reviewed"),
+                "calcium_status": st.session_state.get("calcium", "Not Reviewed"),
+                "med_change": st.session_state.get("med", "No"),
+                "med_change_types": st.session_state.get("med_change_list", []),
+                "followup_appointment": st.session_state.get("followup", "")
             }
             prompt = build_prompt(inputs)
+        
         st.info("Generating AVS summary, please wait...")
-        summary_text = generate_avs_summary(prompt)
+        with st.spinner("Processing..."):
+            summary_text = generate_avs_summary(prompt)
+        
         if summary_text:
             st.subheader("Generated AVS Summary")
             st.text_area("", value=summary_text, height=300)
