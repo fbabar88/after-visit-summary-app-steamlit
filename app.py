@@ -78,21 +78,19 @@ def build_prompt(inputs: dict) -> str:
     else:
         lines.append("- Diabetes: Not provided")
     
-    lines.append(f"- Labs Review: {inputs['labs_review']}")
-    if inputs["labs_review"] in ["Reviewed and Stable", "Reviewed and Unstable"]:
-        lab_lines = []
-        if inputs["anemia_checked"]:
-            lab_lines.append(f"Anemia: Hemoglobin {inputs['hemoglobin_status']}, Iron {inputs['iron_status']}")
-        if inputs["electrolyte_checked"]:
-            lab_lines.append(f"Electrolyte: Potassium {inputs['potassium_status']}, Bicarbonate {inputs['bicarbonate_status']}")
-        if inputs["bone_checked"]:
-            lab_lines.append(f"Bone Mineral Disease: PTH {inputs['pth_status']}, Vitamin D {inputs['vitamin_d_status']}")
-        if lab_lines:
-            lines.append("Labs Details: " + "; ".join(lab_lines))
+    # Labs Section
+    lines.append("Labs:")
+    if inputs["anemia_checked"]:
+        lines.append(f"  - Anemia: Hemoglobin {inputs['hemoglobin_status']}, Iron {inputs['iron_status']}")
+    if inputs["electrolyte_checked"]:
+        lines.append(f"  - Electrolyte: Potassium {inputs['potassium_status']}, Bicarbonate {inputs['bicarbonate_status']}")
+    if inputs["bone_checked"]:
+        lines.append(f"  - Bone Mineral Disease: PTH {inputs['pth_status']}, Vitamin D {inputs['vitamin_d_status']}")
+    
     lines.append(f"- Medication Change: {inputs['med_change']}")
     if inputs["med_change"] == "Yes" and inputs["med_change_types"]:
         lines.append(f"  - Medication Changes: {', '.join(inputs['med_change_types'])}")
-    lines.append(f"- Follow-up Appointment: {inputs['followup_appointment']}")
+    
     lines.append("")
     lines.append("Generate a concise, unified AVS summary in 1–2 paragraphs that integrates recommendations, next steps, and patient education points in a natural narrative.")
     return "\n".join(lines)
@@ -144,36 +142,32 @@ def main():
                 a1c_level = st.text_input("Enter A1c Level (if available)", key="a1c_level")
             
             with st.expander("Labs", expanded=True):
-                labs_review = st.selectbox("Labs Review", ["Reviewed and Stable", "Reviewed and Unstable", "Not Reviewed", "N/A"], key="labs_review")
-                # Initialize defaults
-                hemoglobin_status = "N/A"
-                iron_status = "N/A"
-                potassium_status = "N/A"
-                bicarbonate_status = "N/A"
-                pth_status = "N/A"
-                vitamin_d_status = "N/A"
-                anemia_checked = False
-                electrolyte_checked = False
-                bone_checked = False
-                if labs_review in ["Reviewed and Stable", "Reviewed and Unstable"]:
-                    st.markdown("#### Select Lab Categories")
-                    anemia_checked = st.checkbox("Anemia (Hemoglobin & Iron)", key="anemia_checked")
-                    if anemia_checked:
-                        st.markdown("**Anemia Category**")
-                        hemoglobin_status = st.selectbox("Hemoglobin", ["Normal", "Low"], key="hemoglobin")
-                        iron_status = st.selectbox("Iron", ["Normal", "Low"], key="iron")
-                    electrolyte_checked = st.checkbox("Electrolyte (Potassium & Bicarbonate)", key="electrolyte_checked")
-                    if electrolyte_checked:
-                        st.markdown("**Electrolyte Category**")
-                        potassium_status = st.selectbox("Potassium", ["Normal", "Elevated", "Low"], key="potassium")
-                        bicarbonate_status = st.selectbox("Bicarbonate", ["Normal", "Low"], key="bicarbonate")
-                    bone_checked = st.checkbox("Bone Mineral Disease (PTH & Vitamin D)", key="bone_checked")
-                    if bone_checked:
-                        st.markdown("**Bone Mineral Disease Category**")
-                        pth_status = st.selectbox("PTH", ["Normal", "Elevated", "Low"], key="pth")
-                        vitamin_d_status = st.selectbox("Vitamin D", ["Normal", "Low"], key="vitamin_d")
+                # Remove labs review dropdown; instead, directly use checkboxes for each lab category
+                anemia_checked = st.checkbox("Anemia (Hemoglobin & Iron)", key="anemia_checked")
+                if anemia_checked:
+                    hemoglobin_status = st.selectbox("Hemoglobin", ["Low", "High"], key="hemoglobin")
+                    iron_status = st.selectbox("Iron", ["Low", "High"], key="iron")
+                else:
+                    hemoglobin_status = "Not Reviewed"
+                    iron_status = "Not Reviewed"
+                
+                electrolyte_checked = st.checkbox("Electrolyte (Potassium & Bicarbonate)", key="electrolyte_checked")
+                if electrolyte_checked:
+                    potassium_status = st.selectbox("Potassium", ["Low", "High"], key="potassium")
+                    bicarbonate_status = st.selectbox("Bicarbonate", ["Low", "High"], key="bicarbonate")
+                else:
+                    potassium_status = "Not Reviewed"
+                    bicarbonate_status = "Not Reviewed"
+                
+                bone_checked = st.checkbox("Bone Mineral Disease (PTH & Vitamin D)", key="bone_checked")
+                if bone_checked:
+                    pth_status = st.selectbox("PTH", ["Low", "High"], key="pth")
+                    vitamin_d_status = st.selectbox("Vitamin D", ["Low", "High"], key="vitamin_d")
+                else:
+                    pth_status = "Not Reviewed"
+                    vitamin_d_status = "Not Reviewed"
             
-            with st.expander("Medication Change & Follow-up", expanded=True):
+            with st.expander("Medication Change", expanded=True):
                 med_change = st.radio("Medication Change?", ["No", "Yes", "N/A"], key="med_change")
                 if med_change == "Yes":
                     med_change_types = st.multiselect(
@@ -192,7 +186,6 @@ def main():
                     )
                 else:
                     med_change_types = []
-                followup_appointment = st.text_input("Enter Follow-up Appointment (e.g., 2 weeks)", key="followup")
             
             structured_submit = st.form_submit_button(label="Generate AVS Summary")
     
@@ -212,19 +205,18 @@ def main():
             "bp_reading": st.session_state.get("bp_reading", "At Goal"),
             "diabetes_status": st.session_state.get("diabetes_status", "Controlled"),
             "a1c_level": st.session_state.get("a1c_level", ""),
-            "labs_review": st.session_state.get("labs_review", "N/A"),
-            "hemoglobin_status": st.session_state.get("hemoglobin", "N/A"),
-            "iron_status": st.session_state.get("iron", "N/A"),
-            "potassium_status": st.session_state.get("potassium", "N/A"),
-            "bicarbonate_status": st.session_state.get("bicarbonate", "N/A"),
-            "pth_status": st.session_state.get("pth", "N/A"),
-            "vitamin_d_status": st.session_state.get("vitamin_d", "N/A"),
+            "labs_review": "",  # Not used anymore
+            "hemoglobin_status": st.session_state.get("hemoglobin", "Not Reviewed"),
+            "iron_status": st.session_state.get("iron", "Not Reviewed"),
+            "potassium_status": st.session_state.get("potassium", "Not Reviewed"),
+            "bicarbonate_status": st.session_state.get("bicarbonate", "Not Reviewed"),
+            "pth_status": st.session_state.get("pth", "Not Reviewed"),
+            "vitamin_d_status": st.session_state.get("vitamin_d", "Not Reviewed"),
             "anemia_checked": st.session_state.get("anemia_checked", False),
             "electrolyte_checked": st.session_state.get("electrolyte_checked", False),
             "bone_checked": st.session_state.get("bone_checked", False),
             "med_change": st.session_state.get("med_change", "No"),
-            "med_change_types": st.session_state.get("med_change_types", []),
-            "followup_appointment": st.session_state.get("followup", "")
+            "med_change_types": st.session_state.get("med_change_types", [])
         }
         prompt = build_prompt(inputs)
         st.info("Generating AVS summary, please wait...")
@@ -251,7 +243,6 @@ def main():
             st.markdown("### Printing Instructions")
             st.write("To print only the AVS summary, use your browser's print function (Ctrl+P or Cmd+P).")
     
-    # Process Free Text Command Submission
     elif input_mode == "Free Text Command" and free_text_submit:
         prompt = st.session_state.get("free_text", "")
         st.info("Generating AVS summary from free text command, please wait...")
