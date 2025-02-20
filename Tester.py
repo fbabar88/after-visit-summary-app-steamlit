@@ -67,13 +67,13 @@ def build_prompt(inputs: dict) -> str:
         f"- Proteinuria: {inputs['proteinuria_status']}",
         f"- Blood Pressure: {inputs['bp_status']} (Reading: {inputs['bp_reading']})",
     ]
-    # Include diabetes details only if A1c is provided.
+    # Diabetes details (include A1c if provided)
     if inputs["a1c_level"].strip() != "":
         lines.append(f"- Diabetes: {inputs['diabetes_status']} (A1c: {inputs['a1c_level']})")
     else:
         lines.append("- Diabetes: Not provided")
     
-    # Labs: Include only parameters that are not "Not Reviewed"
+    # Labs: Only include parameters that have been reviewed
     lab_details = []
     if inputs.get("hemoglobin_status", "Not Reviewed") != "Not Reviewed" or inputs.get("iron_status", "Not Reviewed") != "Not Reviewed":
         lab_details.append(f"Anemia (Hemoglobin: {inputs.get('hemoglobin_status', 'Not Reviewed')}, Iron: {inputs.get('iron_status', 'Not Reviewed')})")
@@ -132,115 +132,60 @@ def main():
         
         # Basic Info
         with st.expander("Basic Info", expanded=True):
-            ckd_stage = st.selectbox(
-                "CKD Stage",
-                ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"],
-                key="ckd",
-                help="Select the stage of Chronic Kidney Disease."
-            )
-            kidney_trend = st.selectbox(
-                "Kidney Function Trend",
-                ["Stable", "Worsening", "Improving", "N/A"],
-                key="kidney",
-                help="Select the trend in kidney function over time."
-            )
-            proteinuria_status = st.radio(
-                "Proteinuria Status",
-                ["Not Present", "Improving", "Worsening"],
-                key="proteinuria",
-                help="Select the status of protein in urine."
-            )
+            ckd_stage = st.selectbox("CKD Stage", ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"], key="ckd", help="Select the stage of Chronic Kidney Disease.")
+            kidney_trend = st.selectbox("Kidney Function Trend", ["Stable", "Worsening", "Improving", "N/A"], key="kidney", help="Select the trend in kidney function over time.")
+            proteinuria_status = st.radio("Proteinuria Status", ["Not Present", "Improving", "Worsening"], key="proteinuria", help="Select the status of protein in urine.")
         
         # Advanced Options
         with st.expander("Advanced Options"):
             st.markdown("#### Diabetes & Hypertension")
-            bp_status = st.radio(
-                "Blood Pressure Status",
-                ["At Goal", "Above Goal"],
-                key="bp",
-                help="Select if blood pressure is at goal or above goal."
-            )
+            bp_status = st.radio("Blood Pressure Status", ["At Goal", "Above Goal"], key="bp", help="Select if blood pressure is at goal or above goal.")
             if bp_status == "Above Goal":
-                bp_reading = st.text_input(
-                    "Enter BP Reading",
-                    key="bp_reading",
-                    help="Enter blood pressure reading (e.g., 150/90)."
-                )
+                bp_reading = st.text_input("Enter BP Reading", key="bp_reading", help="Enter blood pressure reading (e.g., 150/90).")
             else:
                 bp_reading = "At Goal"
-            diabetes_status = st.radio(
-                "Diabetes Control",
-                ["Controlled", "Uncontrolled"],
-                key="diabetes",
-                help="Select diabetes control status."
-            )
-            a1c_level = st.text_input(
-                "Enter A1c Level (if available)",
-                key="a1c",
-                help="Enter the latest A1c level if available."
-            )
+            diabetes_status = st.radio("Diabetes Control", ["Controlled", "Uncontrolled"], key="diabetes", help="Select diabetes control status.")
+            a1c_level = st.text_input("Enter A1c Level (if available)", key="a1c", help="Enter the latest A1c level if available.")
             
             st.markdown("#### Labs")
-            st.markdown("Select lab values. If not reviewed, choose 'Not Reviewed'.")
-            col1, col2 = st.columns(2)
-            with col1:
-                hemoglobin_status = st.selectbox(
-                    "Hemoglobin",
-                    ["Not Reviewed", "Normal", "Low"],
-                    key="hemoglobin",
-                    help="Select hemoglobin status."
-                )
-                iron_status = st.selectbox(
-                    "Iron",
-                    ["Not Reviewed", "Normal", "Low"],
-                    key="iron",
-                    help="Select iron status."
-                )
-                sodium_status = st.selectbox(
-                    "Sodium",
-                    ["Not Reviewed", "Normal", "High", "Low"],
-                    key="sodium",
-                    help="Select sodium level status."
-                )
-                potassium_status = st.selectbox(
-                    "Potassium",
-                    ["Not Reviewed", "Normal", "Elevated", "Low"],
-                    key="potassium",
-                    help="Select potassium level status."
-                )
-            with col2:
-                bicarbonate_status = st.selectbox(
-                    "Bicarbonate",
-                    ["Not Reviewed", "Normal", "Low"],
-                    key="bicarbonate",
-                    help="Select bicarbonate level status."
-                )
-                pth_status = st.selectbox(
-                    "PTH",
-                    ["Not Reviewed", "Normal", "Elevated", "Low"],
-                    key="pth",
-                    help="Select parathyroid hormone status."
-                )
-                vitamin_d_status = st.selectbox(
-                    "Vitamin D",
-                    ["Not Reviewed", "Normal", "Low"],
-                    key="vitamin_d",
-                    help="Select vitamin D status."
-                )
-                calcium_status = st.selectbox(
-                    "Calcium",
-                    ["Not Reviewed", "Normal", "High", "Low"],
-                    key="calcium",
-                    help="Select calcium level status."
-                )
+            # Main Labs Expander with collapsible categories
+            with st.expander("Labs", expanded=True):
+                # Electrolytes Category
+                with st.expander("Electrolytes", expanded=False):
+                    electrolytes_review = st.radio("Review Electrolytes?", ["Not Reviewed", "Reviewed"], key="electrolytes_review", horizontal=True)
+                    if electrolytes_review == "Reviewed":
+                        potassium_status = st.selectbox("Potassium", ["Normal", "High", "Low"], key="potassium")
+                        sodium_status = st.selectbox("Sodium", ["Normal", "High", "Low"], key="sodium")
+                        bicarbonate_status = st.selectbox("Bicarbonate", ["Normal", "High", "Low"], key="bicarbonate")
+                    else:
+                        potassium_status = "Not Reviewed"
+                        sodium_status = "Not Reviewed"
+                        bicarbonate_status = "Not Reviewed"
+                
+                # Anemia Category
+                with st.expander("Anemia", expanded=False):
+                    anemia_review = st.radio("Review Anemia?", ["Not Reviewed", "Reviewed"], key="anemia_review", horizontal=True)
+                    if anemia_review == "Reviewed":
+                        hemoglobin_status = st.selectbox("Hemoglobin", ["Normal", "Low", "High"], key="hemoglobin")
+                        iron_status = st.selectbox("Iron", ["Normal", "Low", "High"], key="iron")
+                    else:
+                        hemoglobin_status = "Not Reviewed"
+                        iron_status = "Not Reviewed"
+                
+                # Bone Mineral Disease Category
+                with st.expander("Bone Mineral Disease", expanded=False):
+                    bone_review = st.radio("Review Bone Mineral Disease?", ["Not Reviewed", "Reviewed"], key="bone_review", horizontal=True)
+                    if bone_review == "Reviewed":
+                        pth_status = st.selectbox("PTH", ["Normal", "High", "Low"], key="pth")
+                        vitamin_d_status = st.selectbox("Vitamin D", ["Normal", "Low", "High"], key="vitamin_d")
+                        calcium_status = st.selectbox("Calcium", ["Normal", "High", "Low"], key="calcium")
+                    else:
+                        pth_status = "Not Reviewed"
+                        vitamin_d_status = "Not Reviewed"
+                        calcium_status = "Not Reviewed"
             
             st.markdown("#### Medication Change & Follow-up")
-            med_change = st.radio(
-                "Medication Change?",
-                ["No", "Yes", "N/A"],
-                key="med",
-                help="Has there been any medication change?"
-            )
+            med_change = st.radio("Medication Change?", ["No", "Yes", "N/A"], key="med", help="Has there been any medication change?")
             if med_change == "Yes":
                 med_change_types = st.multiselect(
                     "Select Medication Changes", 
@@ -259,20 +204,13 @@ def main():
                 )
             else:
                 med_change_types = []
-            followup_appointment = st.text_input(
-                "Enter Follow-up Appointment (e.g., 2 weeks)",
-                key="followup",
-                help="Specify the follow-up appointment time."
-            )
+            followup_appointment = st.text_input("Enter Follow-up Appointment (e.g., 2 weeks)", key="followup", help="Specify the follow-up appointment time.")
         
         # Free Text Command (Optional)
         st.markdown("### Free Text Command (Optional)")
-        free_text_command = st.text_area(
-            "Enter free text command to override structured input (if desired):",
-            key="free_text"
-        )
+        free_text_command = st.text_area("Enter free text command to override structured input (if desired):", key="free_text")
         
-        # Submit button for the form (note: use st.form_submit_button without the sidebar prefix)
+        # Submit button for the form (use st.form_submit_button inside the form)
         submit_button = st.form_submit_button(label="Generate AVS Summary")
     
     # Quick Reset Button (outside the form)
@@ -307,11 +245,9 @@ def main():
                 "followup_appointment": st.session_state.get("followup", "")
             }
             prompt = build_prompt(inputs)
-        
         st.info("Generating AVS summary, please wait...")
         with st.spinner("Processing..."):
             summary_text = generate_avs_summary(prompt)
-        
         if summary_text:
             st.subheader("Generated AVS Summary")
             st.text_area("", value=summary_text, height=300)
