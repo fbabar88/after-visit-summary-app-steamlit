@@ -78,7 +78,6 @@ def build_prompt(inputs: dict) -> str:
     else:
         lines.append("- Diabetes: Not provided")
     
-    # Labs Section
     lines.append("Labs:")
     if inputs["anemia_checked"]:
         lines.append(f"  - Anemia: Hemoglobin {inputs['hemoglobin_status']}, Iron {inputs['iron_status']}")
@@ -120,82 +119,72 @@ def main():
     input_mode = st.sidebar.radio("Select Input Mode", ["Structured Input", "Free Text Command"], key="input_mode")
     
     if input_mode == "Structured Input":
-        with st.sidebar.form(key="structured_form"):
-            st.header("Structured Patient Details")
-            
-            with st.expander("CKD Stage", expanded=True):
-                ckd_stage = st.selectbox("Select CKD Stage", ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"], key="ckd")
-            
-            with st.expander("Kidney Function Status", expanded=True):
-                kidney_trend = st.selectbox("Select Kidney Function Trend", ["Stable", "Worsening", "Improving", "N/A"], key="kidney")
-            
-            with st.expander("Proteinuria", expanded=True):
-                proteinuria_status = st.radio("Proteinuria Status", ["Not Present", "Improving", "Worsening"], key="proteinuria")
-            
-            with st.expander("Diabetes & HTN", expanded=True):
-                bp_status = st.radio("Blood Pressure Status", ["At Goal", "Above Goal"], key="bp_status")
-                if bp_status == "Above Goal":
-                    bp_reading = st.text_input("Enter BP Reading", key="bp_reading")
-                else:
-                    bp_reading = "At Goal"
-                diabetes_status = st.radio("Diabetes Control", ["Controlled", "Uncontrolled"], key="diabetes_status")
-                a1c_level = st.text_input("Enter A1c Level (if available)", key="a1c_level")
-            
-            with st.expander("Labs", expanded=True):
-                # Remove labs review dropdown; instead, directly use checkboxes for each lab category
-                anemia_checked = st.checkbox("Anemia (Hemoglobin & Iron)", key="anemia_checked")
-                if anemia_checked:
-                    hemoglobin_status = st.selectbox("Hemoglobin", ["Low", "High"], key="hemoglobin")
-                    iron_status = st.selectbox("Iron", ["Low", "High"], key="iron")
-                else:
-                    hemoglobin_status = "Not Reviewed"
-                    iron_status = "Not Reviewed"
-                
-                electrolyte_checked = st.checkbox("Electrolyte (Potassium & Bicarbonate)", key="electrolyte_checked")
-                if electrolyte_checked:
-                    potassium_status = st.selectbox("Potassium", ["Low", "High"], key="potassium")
-                    bicarbonate_status = st.selectbox("Bicarbonate", ["Low", "High"], key="bicarbonate")
-                else:
-                    potassium_status = "Not Reviewed"
-                    bicarbonate_status = "Not Reviewed"
-                
-                bone_checked = st.checkbox("Bone Mineral Disease (PTH & Vitamin D)", key="bone_checked")
-                if bone_checked:
-                    pth_status = st.selectbox("PTH", ["Low", "High"], key="pth")
-                    vitamin_d_status = st.selectbox("Vitamin D", ["Low", "High"], key="vitamin_d")
-                else:
-                    pth_status = "Not Reviewed"
-                    vitamin_d_status = "Not Reviewed"
-            
-            with st.expander("Medication Change", expanded=True):
-                med_change = st.radio("Medication Change?", ["No", "Yes", "N/A"], key="med_change")
-                if med_change == "Yes":
-                    med_change_types = st.multiselect(
-                        "Select Medication Changes", 
-                        options=[
-                            "BP Medication", 
-                            "Diabetes Medication", 
-                            "Diuretic", 
-                            "Potassium Binder", 
-                            "Iron Supplement", 
-                            "ESA Therapy", 
-                            "Vitamin D Supplement", 
-                            "Bicarbonate Supplement"
-                        ],
-                        key="med_change_types"
-                    )
-                else:
-                    med_change_types = []
-            
-            structured_submit = st.form_submit_button(label="Generate AVS Summary")
+        st.sidebar.header("Structured Patient Details")
+        # Widgets are placed directly in the sidebar (not in a form) so they update interactively.
+        ckd_stage = st.sidebar.selectbox("Select CKD Stage", ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"], key="ckd")
+        kidney_trend = st.sidebar.selectbox("Select Kidney Function Trend", ["Stable", "Worsening", "Improving", "N/A"], key="kidney")
+        proteinuria_status = st.sidebar.radio("Proteinuria Status", ["Not Present", "Improving", "Worsening"], key="proteinuria")
+        bp_status = st.sidebar.radio("Blood Pressure Status", ["At Goal", "Above Goal"], key="bp_status")
+        if bp_status == "Above Goal":
+            bp_reading = st.sidebar.text_input("Enter BP Reading", key="bp_reading")
+        else:
+            bp_reading = "At Goal"
+        diabetes_status = st.sidebar.radio("Diabetes Control", ["Controlled", "Uncontrolled"], key="diabetes_status")
+        a1c_level = st.sidebar.text_input("Enter A1c Level (if available)", key="a1c_level")
+        
+        st.sidebar.markdown("### Labs")
+        anemia_checked = st.sidebar.checkbox("Anemia (Hemoglobin & Iron)", key="anemia_checked")
+        if anemia_checked:
+            hemoglobin_status = st.sidebar.selectbox("Hemoglobin", ["Low", "High"], key="hemoglobin")
+            iron_status = st.sidebar.selectbox("Iron", ["Low", "High"], key="iron")
+        else:
+            hemoglobin_status = "Not Reviewed"
+            iron_status = "Not Reviewed"
+        
+        electrolyte_checked = st.sidebar.checkbox("Electrolyte (Potassium & Bicarbonate)", key="electrolyte_checked")
+        if electrolyte_checked:
+            potassium_status = st.sidebar.selectbox("Potassium", ["Low", "High"], key="potassium")
+            bicarbonate_status = st.sidebar.selectbox("Bicarbonate", ["Low", "High"], key="bicarbonate")
+        else:
+            potassium_status = "Not Reviewed"
+            bicarbonate_status = "Not Reviewed"
+        
+        bone_checked = st.sidebar.checkbox("Bone Mineral Disease (PTH & Vitamin D)", key="bone_checked")
+        if bone_checked:
+            pth_status = st.sidebar.selectbox("PTH", ["Low", "High"], key="pth")
+            vitamin_d_status = st.sidebar.selectbox("Vitamin D", ["Low", "High"], key="vitamin_d")
+        else:
+            pth_status = "Not Reviewed"
+            vitamin_d_status = "Not Reviewed"
+        
+        st.sidebar.markdown("### Medication Change")
+        med_change = st.sidebar.radio("Medication Change?", ["No", "Yes", "N/A"], key="med_change")
+        if med_change == "Yes":
+            med_change_types = st.sidebar.multiselect(
+                "Select Medication Changes", 
+                options=[
+                    "BP Medication", 
+                    "Diabetes Medication", 
+                    "Diuretic", 
+                    "Potassium Binder", 
+                    "Iron Supplement", 
+                    "ESA Therapy", 
+                    "Vitamin D Supplement", 
+                    "Bicarbonate Supplement"
+                ],
+                key="med_change_types"
+            )
+        else:
+            med_change_types = []
+        
+        structured_submit = st.sidebar.button("Generate AVS Summary")
     
     else:  # Free Text Command Mode
-        with st.sidebar.form(key="free_text_form"):
-            st.header("Free Text Input")
-            free_text_command = st.text_area("Enter your free text command for AVS summary:", key="free_text")
-            free_text_submit = st.form_submit_button(label="Generate AVS Summary")
+        st.sidebar.header("Free Text Input")
+        free_text_command = st.sidebar.text_area("Enter your free text command for AVS summary:", key="free_text")
+        free_text_submit = st.sidebar.button("Generate AVS Summary")
     
-    # Process Structured Input Submission
+    # Process Submission for Structured Input
     if input_mode == "Structured Input" and structured_submit:
         inputs = {
             "ckd_stage": st.session_state.get("ckd", "N/A"),
@@ -205,7 +194,7 @@ def main():
             "bp_reading": st.session_state.get("bp_reading", "At Goal"),
             "diabetes_status": st.session_state.get("diabetes_status", "Controlled"),
             "a1c_level": st.session_state.get("a1c_level", ""),
-            "labs_review": "",  # Not used anymore
+            "labs_review": "",  # Not used in this version
             "hemoglobin_status": st.session_state.get("hemoglobin", "Not Reviewed"),
             "iron_status": st.session_state.get("iron", "Not Reviewed"),
             "potassium_status": st.session_state.get("potassium", "Not Reviewed"),
@@ -243,6 +232,7 @@ def main():
             st.markdown("### Printing Instructions")
             st.write("To print only the AVS summary, use your browser's print function (Ctrl+P or Cmd+P).")
     
+    # Process Submission for Free Text Command
     elif input_mode == "Free Text Command" and free_text_submit:
         prompt = st.session_state.get("free_text", "")
         st.info("Generating AVS summary from free text command, please wait...")
