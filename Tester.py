@@ -126,7 +126,7 @@ def reset_form():
 def main():
     st.title("AVS Summary Generator")
     
-    # --- Sidebar Form (using top-level expanders to avoid nesting) ---
+    # --- Sidebar Form (using top-level expanders) ---
     with st.sidebar.form(key="input_form"):
         st.header("Patient Details")
         
@@ -201,7 +201,8 @@ def main():
                         "Diuretics",
                         "BP Medication",
                         "Diabetes Medication",
-                        "Vitamin D Supplementation"
+                        "Vitamin D Supplementation",
+                        "ESA Therapy"
                     ],
                     key="med_change_list",
                     help="Select the medications that have been changed."
@@ -227,7 +228,7 @@ def main():
     
     # --- Main Page: Generate and Display Summary ---
     if submit_button:
-        # Use free text command if provided, else use structured inputs.
+        # Use free text command if provided; else use structured inputs.
         if free_text_command.strip() != "":
             prompt = free_text_command
         else:
