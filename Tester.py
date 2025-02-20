@@ -67,7 +67,7 @@ def build_prompt(inputs: dict) -> str:
         f"- Proteinuria: {inputs['proteinuria_status']}",
         f"- Blood Pressure: {inputs['bp_status']} (Reading: {inputs['bp_reading']})",
     ]
-    # Diabetes details (include A1c if provided)
+    # Include diabetes details only if A1c is provided.
     if inputs["a1c_level"].strip() != "":
         lines.append(f"- Diabetes: {inputs['diabetes_status']} (A1c: {inputs['a1c_level']})")
     else:
@@ -148,41 +148,37 @@ def main():
             a1c_level = st.text_input("Enter A1c Level (if available)", key="a1c", help="Enter the latest A1c level if available.")
             
             st.markdown("#### Labs")
-            # Main Labs Expander with collapsible categories
-            with st.expander("Labs", expanded=True):
-                # Electrolytes Category
-                with st.expander("Electrolytes", expanded=False):
-                    electrolytes_review = st.radio("Review Electrolytes?", ["Not Reviewed", "Reviewed"], key="electrolytes_review", horizontal=True)
-                    if electrolytes_review == "Reviewed":
-                        potassium_status = st.selectbox("Potassium", ["Normal", "High", "Low"], key="potassium")
-                        sodium_status = st.selectbox("Sodium", ["Normal", "High", "Low"], key="sodium")
-                        bicarbonate_status = st.selectbox("Bicarbonate", ["Normal", "High", "Low"], key="bicarbonate")
-                    else:
-                        potassium_status = "Not Reviewed"
-                        sodium_status = "Not Reviewed"
-                        bicarbonate_status = "Not Reviewed"
-                
-                # Anemia Category
-                with st.expander("Anemia", expanded=False):
-                    anemia_review = st.radio("Review Anemia?", ["Not Reviewed", "Reviewed"], key="anemia_review", horizontal=True)
-                    if anemia_review == "Reviewed":
-                        hemoglobin_status = st.selectbox("Hemoglobin", ["Normal", "Low", "High"], key="hemoglobin")
-                        iron_status = st.selectbox("Iron", ["Normal", "Low", "High"], key="iron")
-                    else:
-                        hemoglobin_status = "Not Reviewed"
-                        iron_status = "Not Reviewed"
-                
-                # Bone Mineral Disease Category
-                with st.expander("Bone Mineral Disease", expanded=False):
-                    bone_review = st.radio("Review Bone Mineral Disease?", ["Not Reviewed", "Reviewed"], key="bone_review", horizontal=True)
-                    if bone_review == "Reviewed":
-                        pth_status = st.selectbox("PTH", ["Normal", "High", "Low"], key="pth")
-                        vitamin_d_status = st.selectbox("Vitamin D", ["Normal", "Low", "High"], key="vitamin_d")
-                        calcium_status = st.selectbox("Calcium", ["Normal", "High", "Low"], key="calcium")
-                    else:
-                        pth_status = "Not Reviewed"
-                        vitamin_d_status = "Not Reviewed"
-                        calcium_status = "Not Reviewed"
+            # Instead of nesting expanders, display each lab category separately
+            with st.expander("Electrolytes", expanded=False):
+                electrolytes_review = st.radio("Review Electrolytes?", ["Not Reviewed", "Reviewed"], key="electrolytes_review", horizontal=True)
+                if electrolytes_review == "Reviewed":
+                    potassium_status = st.selectbox("Potassium", ["Normal", "High", "Low"], key="potassium")
+                    sodium_status = st.selectbox("Sodium", ["Normal", "High", "Low"], key="sodium")
+                    bicarbonate_status = st.selectbox("Bicarbonate", ["Normal", "High", "Low"], key="bicarbonate")
+                else:
+                    potassium_status = "Not Reviewed"
+                    sodium_status = "Not Reviewed"
+                    bicarbonate_status = "Not Reviewed"
+            
+            with st.expander("Anemia", expanded=False):
+                anemia_review = st.radio("Review Anemia?", ["Not Reviewed", "Reviewed"], key="anemia_review", horizontal=True)
+                if anemia_review == "Reviewed":
+                    hemoglobin_status = st.selectbox("Hemoglobin", ["Normal", "Low", "High"], key="hemoglobin")
+                    iron_status = st.selectbox("Iron", ["Normal", "Low", "High"], key="iron")
+                else:
+                    hemoglobin_status = "Not Reviewed"
+                    iron_status = "Not Reviewed"
+            
+            with st.expander("Bone Mineral Disease", expanded=False):
+                bone_review = st.radio("Review Bone Mineral Disease?", ["Not Reviewed", "Reviewed"], key="bone_review", horizontal=True)
+                if bone_review == "Reviewed":
+                    pth_status = st.selectbox("PTH", ["Normal", "High", "Low"], key="pth")
+                    vitamin_d_status = st.selectbox("Vitamin D", ["Normal", "Low", "High"], key="vitamin_d")
+                    calcium_status = st.selectbox("Calcium", ["Normal", "High", "Low"], key="calcium")
+                else:
+                    pth_status = "Not Reviewed"
+                    vitamin_d_status = "Not Reviewed"
+                    calcium_status = "Not Reviewed"
             
             st.markdown("#### Medication Change & Follow-up")
             med_change = st.radio("Medication Change?", ["No", "Yes", "N/A"], key="med", help="Has there been any medication change?")
@@ -210,7 +206,7 @@ def main():
         st.markdown("### Free Text Command (Optional)")
         free_text_command = st.text_area("Enter free text command to override structured input (if desired):", key="free_text")
         
-        # Submit button for the form (use st.form_submit_button inside the form)
+        # Submit button for the form
         submit_button = st.form_submit_button(label="Generate AVS Summary")
     
     # Quick Reset Button (outside the form)
