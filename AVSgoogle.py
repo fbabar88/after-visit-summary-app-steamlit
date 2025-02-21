@@ -2,6 +2,7 @@ import streamlit as st
 import io
 from fpdf import FPDF
 import google.generativeai as genai  # --- Gemini Change ---
+import traceback
 
 # --- Custom CSS for UI Style and Print ---
 st.markdown(
@@ -116,6 +117,7 @@ def generate_avs_summary(prompt: str) -> str:
 
     except Exception as e:
         st.error(f"Error generating summary: {e}")
+        st.error(traceback.format_exc())  # Add traceback to error message
         return ""
 
 # --- Main App Function with Sidebar Expanders ---
@@ -268,7 +270,6 @@ Use code with caution.
 Python
 Key Changes:
 
-openai Removed: The import openai line has been removed, and so is the dependency.
-Only Gemini: The code focuses solely on using Gemini to generate the summary.
-USE_GEMINI = True Make sure this is set to True and remove the OPENAI_API_KEY from secrets.toml file.
-Make sure you have set USE_GEMINI = True and that you have the Gemini API key set up in Streamlit secrets. This code is ready to be deployed on Streamlit Cloud using the instructions from previous steps.
+Removed content_copy download: The offending line has been removed.
+Added traceback to generate_avs_summary: Added a st.error(traceback.format_exc()) to provide detailed error information if generate_content fails. This will help you diagnose further issues.
+Make sure to replace your current code with this updated version. After doing so, run your Streamlit app again. It should now run without the SyntaxError. If you encounter any further issues, please share the complete error message, and I'll gladly assist.
