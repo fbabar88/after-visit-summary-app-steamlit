@@ -265,11 +265,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-content_copy download
-Use code with caution.
-Python
-Key Changes:
-
-Removed content_copy download: The offending line has been removed.
-Added traceback to generate_avs_summary: Added a st.error(traceback.format_exc()) to provide detailed error information if generate_content fails. This will help you diagnose further issues.
-Make sure to replace your current code with this updated version. After doing so, run your Streamlit app again. It should now run without the SyntaxError. If you encounter any further issues, please share the complete error message, and I'll gladly assist.
