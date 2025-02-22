@@ -112,6 +112,12 @@ def build_prompt(inputs: dict) -> str:
     else:
         lines.append(f"- Medication Change: {inputs.get('med_change', 'No')}")
     
+    # Additional Clinical Comments (free text)
+    if inputs.get("additional_comments", "").strip():
+        lines.append("")
+        lines.append("Additional Clinical Comments:")
+        lines.append(inputs["additional_comments"])
+    
     lines.append("")
     lines.append("Please generate the AVS summary following the above structure. Each section should begin with the designated heading, and the final section (Suggestions) should include 1–2 lines of clinical recommendations based on the data.")
     
@@ -197,6 +203,10 @@ def main():
             else:
                 med_change_types = []
         
+        # Additional Clinical Comments (Free Text Field)
+        with st.sidebar.expander("Additional Clinical Comments", expanded=True):
+            additional_comments = st.text_area("Enter any extra clinical details (e.g., dialysis discussion, referrals, transplant evaluation, etc.)", height=100)
+        
         # Generate Summary Button
         if st.sidebar.button("Generate AVS Summary"):
             inputs = {
@@ -219,7 +229,8 @@ def main():
                 "vitamin_d_status": vitamin_d_status,
                 "calcium_status": calcium_status,
                 "med_change": med_change,
-                "med_change_types": med_change_types
+                "med_change_types": med_change_types,
+                "additional_comments": additional_comments
             }
             prompt = build_prompt(inputs)  # Use the global build_prompt function
             st.info("Generating AVS summary, please wait...")
