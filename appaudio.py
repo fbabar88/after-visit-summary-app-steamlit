@@ -160,7 +160,7 @@ audio_recorder_html = """
             // Send the audio to your transcription backend.
             let formData = new FormData();
             formData.append('file', audioBlob, 'recording.wav');
-            fetch("https://<NEW_NGROK_PUBLIC_URL>/transcribe", {
+            fetch("https://95b2-34-42-126-20.ngrok-free.app/transcribe", {
               method: "POST",
               body: formData
             })
