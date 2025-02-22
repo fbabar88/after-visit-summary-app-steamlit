@@ -58,12 +58,47 @@ def generate_pdf(text: str) -> BytesIO:
 
 # --- Build Prompt from Structured Inputs (unchanged) ---
 def build_prompt(inputs: dict) -> str:
-    # [Your existing code for building the prompt from inputs]
-    # ...
-    return "\n".join([
-        "Generate a concise, coherent AVS summary for the following patient details in 1–2 paragraphs. Do not repeat broad category headings; instead, integrate recommendations, next steps, and patient education points naturally into a unified narrative.",
-        # ... add your details here ...
-    ])
+    lines = [
+        "Generate a concise, coherent AVS summary for the following patient details in 1–2 paragraphs. Do not repeat broad category headings; instead, integrate recommendations, next steps, and patient education points naturally into a unified narrative."
+    ]
+    
+    # Patient Details
+    lines.append(f"- CKD Stage: {inputs.get('ckd_stage', 'Not Provided')}")
+    lines.append(f"- Kidney Function Trend: {inputs.get('kidney_trend', 'Not Provided')}")
+    
+    if inputs.get("proteinuria_status", "None") not in ["None", "N/A"]:
+        lines.append(f"- Proteinuria: {inputs['proteinuria_status']}")
+    
+    if inputs.get("bp_status", "None") not in ["None", "N/A"]:
+        lines.append(f"- Blood Pressure Status: {inputs['bp_status']}")
+        if inputs['bp_status'] == "Above Goal":
+            lines.append(f"- BP Reading: {inputs['bp_reading']}")
+    
+    if inputs.get("diabetes_status", "None") not in ["None", "N/A"]:
+        lines.append(f"- Diabetes Control: {inputs['diabetes_status']}")
+        if inputs['diabetes_status'] == "Uncontrolled":
+            lines.append(f"- A1c Level: {inputs['a1c_level']}")
+    
+    # Labs Section
+    lines.append("Labs:")
+    if inputs.get("anemia_included", False):
+        lines.append(f"  - Anemia: Hemoglobin {inputs['hemoglobin_status']}, Iron {inputs['iron_status']}")
+    if inputs.get("electrolyte_included", False):
+        lines.append(f"  - Electrolyte: Potassium {inputs['potassium_status']}, Bicarbonate {inputs['bicarbonate_status']}, Sodium {inputs['sodium_status']}")
+    if inputs.get("bone_included", False):
+        lines.append(f"  - Bone Mineral Disease: PTH {inputs['pth_status']}, Vitamin D {inputs['vitamin_d_status']}, Calcium {inputs['calcium_status']}")
+    
+    # Medication Change Section
+    if inputs.get("med_change", "No") == "Yes":
+        lines.append(f"- Medication Change: Yes")
+        if inputs.get("med_change_types"):
+            lines.append(f"  - Medication Changes: {', '.join(inputs['med_change_types'])}")
+    else:
+        lines.append(f"- Medication Change: {inputs.get('med_change', 'No')}")
+    
+    lines.append("")
+    lines.append("Generate a concise, unified AVS summary in 1–2 paragraphs that integrates recommendations, next steps, and patient education points in a natural narrative.")
+    return "\n".join(lines)
 
 # --- Generate AVS Summary from OpenAI (unchanged) ---
 def generate_avs_summary(prompt: str) -> str:
@@ -82,7 +117,7 @@ def generate_avs_summary(prompt: str) -> str:
         st.error(f"Error generating summary: {e}")
         return ""
 
-# --- Audio Recorder HTML (updated to include transcription display) ---
+# --- Audio Recorder HTML (with updated fetch URL) ---
 audio_recorder_html = """
 <!DOCTYPE html>
 <html>
@@ -122,10 +157,10 @@ audio_recorder_html = """
             const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
             const audioUrl = URL.createObjectURL(audioBlob);
             audioPlayback.src = audioUrl;
-            // Send the audio to the transcription backend.
+            // Send the audio to your transcription backend.
             let formData = new FormData();
             formData.append('file', audioBlob, 'recording.wav');
-            fetch("https://929f-35-243-236-56.ngrok-free.app/transcribe", {
+            fetch("https://<NEW_NGROK_PUBLIC_URL>/transcribe", {
               method: "POST",
               body: formData
             })
@@ -165,14 +200,14 @@ def main():
     input_mode = st.sidebar.radio("Select Input Mode", ["Structured Input", "Free Text Command"])
 
     if input_mode == "Structured Input":
-        # [Your existing structured input code here...]
+        # Structured input section (omitted for brevity)
         st.sidebar.markdown("Structured input mode is not shown here for brevity.")
     else:  # Free Text Command Mode
         st.sidebar.subheader("Free Text Command Mode")
-        # Create two columns: left for free text and right for the audio recorder.
+        # Create two columns: left for free text, right for the audio recorder.
         col1, col2 = st.columns(2)
         with col1:
-            free_text_command = st.text_area("Enter your free text command (or copy transcription from the recorder):", height=200)
+            free_text_command = st.text_area("Enter your free text command for the AVS summary (or copy transcription):", height=200)
             if st.button("Generate AVS Summary", key="free_text"):
                 prompt = free_text_command
                 st.info("Generating AVS summary from free text command, please wait...")
