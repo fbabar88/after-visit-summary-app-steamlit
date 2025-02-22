@@ -58,7 +58,24 @@ def generate_pdf(text: str) -> BytesIO:
 # --- Build Prompt from Structured Inputs ---
 def build_prompt(inputs: dict) -> str:
     lines = [
-        "Generate a concise, coherent AVS summary for the following patient details in 1–2 paragraphs. Do not repeat broad category headings; instead, integrate recommendations, next steps, and patient education points naturally into a unified narrative."
+        "Generate an AVS summary for the following patient details. Structure the response using the following headings:",
+        "",
+        "1. CKD Stage & Kidney Function:",
+        "   - Summarize the CKD stage and the kidney function trend.",
+        "",
+        "2. Proteinuria:",
+        "   - Describe the proteinuria status if provided.",
+        "",
+        "3. HTN & DM:",
+        "   - Summarize the patient's blood pressure status and diabetes control, including any details like BP readings or A1c levels.",
+        "",
+        "4. Labs:",
+        "   - Summarize key lab results including details on anemia, electrolyte levels, and bone mineral disease findings.",
+        "",
+        "5. Suggestions:",
+        "   - Provide 1-2 concise lines of recommendations or next steps based on the provided data.",
+        "",
+        "Patient Details:"
     ]
     
     # Patient Details
@@ -71,12 +88,12 @@ def build_prompt(inputs: dict) -> str:
     if inputs.get("bp_status", "None") not in ["None", "N/A"]:
         lines.append(f"- Blood Pressure Status: {inputs['bp_status']}")
         if inputs['bp_status'] == "Above Goal":
-            lines.append(f"- BP Reading: {inputs['bp_reading']}")
+            lines.append(f"  - BP Reading: {inputs['bp_reading']}")
     
     if inputs.get("diabetes_status", "None") not in ["None", "N/A"]:
         lines.append(f"- Diabetes Control: {inputs['diabetes_status']}")
         if inputs['diabetes_status'] == "Uncontrolled":
-            lines.append(f"- A1c Level: {inputs['a1c_level']}")
+            lines.append(f"  - A1c Level: {inputs['a1c_level']}")
     
     # Labs Section
     lines.append("Labs:")
@@ -96,7 +113,8 @@ def build_prompt(inputs: dict) -> str:
         lines.append(f"- Medication Change: {inputs.get('med_change', 'No')}")
     
     lines.append("")
-    lines.append("Generate a concise, unified AVS summary in 1–2 paragraphs that integrates recommendations, next steps, and patient education points in a natural narrative.")
+    lines.append("Please generate the AVS summary following the above structure. Each section should begin with the designated heading, and the final section (Suggestions) should include 1–2 lines of clinical recommendations based on the data.")
+    
     return "\n".join(lines)
 
 # --- Generate AVS Summary from OpenAI ---
@@ -203,67 +221,12 @@ def main():
                 "med_change": med_change,
                 "med_change_types": med_change_types
             }
-          def build_prompt(inputs: dict) -> str:
-    lines = [
-        "Generate an AVS summary for the following patient details. Structure the response using the following headings:",
-        "",
-        "1. CKD Stage & Kidney Function:",
-        "   - Summarize the CKD stage and the kidney function trend.",
-        "",
-        "2. Proteinuria:",
-        "   - Describe the proteinuria status if provided.",
-        "",
-        "3. HTN & DM:",
-        "   - Summarize the patient's blood pressure status and diabetes control, including any details like BP readings or A1c levels.",
-        "",
-        "4. Labs:",
-        "   - Summarize key lab results including details on anemia, electrolyte levels, and bone mineral disease findings.",
-        "",
-        "5. Suggestions:",
-        "   - Provide 1-2 concise lines of recommendations or next steps based on the provided data.",
-        "",
-        "Patient Details:"
-    ]
-    
-    # Patient Details
-    lines.append(f"- CKD Stage: {inputs.get('ckd_stage', 'Not Provided')}")
-    lines.append(f"- Kidney Function Trend: {inputs.get('kidney_trend', 'Not Provided')}")
-    
-    if inputs.get("proteinuria_status", "None") not in ["None", "N/A"]:
-        lines.append(f"- Proteinuria: {inputs['proteinuria_status']}")
-    
-    if inputs.get("bp_status", "None") not in ["None", "N/A"]:
-        lines.append(f"- Blood Pressure Status: {inputs['bp_status']}")
-        if inputs['bp_status'] == "Above Goal":
-            lines.append(f"  - BP Reading: {inputs['bp_reading']}")
-    
-    if inputs.get("diabetes_status", "None") not in ["None", "N/A"]:
-        lines.append(f"- Diabetes Control: {inputs['diabetes_status']}")
-        if inputs['diabetes_status'] == "Uncontrolled":
-            lines.append(f"  - A1c Level: {inputs['a1c_level']}")
-    
-    # Labs Section
-    lines.append("Labs:")
-    if inputs.get("anemia_included", False):
-        lines.append(f"  - Anemia: Hemoglobin {inputs['hemoglobin_status']}, Iron {inputs['iron_status']}")
-    if inputs.get("electrolyte_included", False):
-        lines.append(f"  - Electrolyte: Potassium {inputs['potassium_status']}, Bicarbonate {inputs['bicarbonate_status']}, Sodium {inputs['sodium_status']}")
-    if inputs.get("bone_included", False):
-        lines.append(f"  - Bone Mineral Disease: PTH {inputs['pth_status']}, Vitamin D {inputs['vitamin_d_status']}, Calcium {inputs['calcium_status']}")
-    
-    # Medication Change Section
-    if inputs.get("med_change", "No") == "Yes":
-        lines.append(f"- Medication Change: Yes")
-        if inputs.get("med_change_types"):
-            lines.append(f"  - Medication Changes: {', '.join(inputs['med_change_types'])}")
-    else:
-        lines.append(f"- Medication Change: {inputs.get('med_change', 'No')}")
-    
-    lines.append("")
-    lines.append("Please generate the AVS summary following the above structure. Each section should begin with the designated heading, and the final section (Suggestions) should include 1–2 lines of clinical recommendations based on the data.")
-    
-    return "\n".join(lines)
-)
+            prompt = build_prompt(inputs)  # Use the global build_prompt function
+            st.info("Generating AVS summary, please wait...")
+            summary_text = generate_avs_summary(prompt)
+            if summary_text:
+                st.subheader("Generated AVS Summary")
+                st.text_area("", value=summary_text, height=300)
                 pdf_data = generate_pdf(summary_text)
                 st.download_button(
                     label="Download Summary as PDF",
