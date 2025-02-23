@@ -133,7 +133,7 @@ def generate_avs_summary(prompt: str) -> str:
                 {"role": "user", "content": prompt}
             ],
             max_tokens=650,
-            temperature=0.8
+            temperature=0.7
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
