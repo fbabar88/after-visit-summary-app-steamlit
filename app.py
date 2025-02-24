@@ -46,12 +46,26 @@ st.markdown(
 # --- Set OpenAI API Key ---
 openai.api_key = st.secrets["general"]["MY_API_KEY"]
 
-# --- PDF Generation Function ---
+# --- PDF Generation Function with Header Formatting ---
 def generate_pdf(text: str) -> BytesIO:
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    
+    # Header
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Nephrology Associates of Lexington P.S.C", ln=1, align="C")
+    
+    # Sub-heading
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "After Visit Summary", ln=1, align="C")
+    
+    # Spacing
+    pdf.ln(10)
+    
+    # Content
+    pdf.set_font("Arial", "", 12)
     pdf.multi_cell(0, 10, text)
+    
     pdf_bytes = pdf.output(dest="S").encode("latin1")
     return BytesIO(pdf_bytes)
 
@@ -98,21 +112,25 @@ def build_prompt(inputs: dict) -> str:
     # Labs Section
     lines.append("Labs:")
     if inputs.get("anemia_included", False):
-        lines.append(f"  - Anemia: Hemoglobin {inputs['hemoglobin_status']}, Iron {inputs['iron_status']}")
+        lines.append(f"  - Hemoglobin: {inputs.get('hemoglobin_status', 'Not Provided')}")
+        lines.append(f"  - Iron: {inputs.get('iron_status', 'Not Provided')}")
+    
     if inputs.get("electrolyte_included", False):
-        lines.append(f"  - Electrolyte: Potassium {inputs['potassium_status']}, Bicarbonate {inputs['bicarbonate_status']}, Sodium {inputs['sodium_status']}")
+        lines.append(f"  - Potassium: {inputs.get('potassium_status', 'Not Provided')}")
+        lines.append(f"  - Bicarbonate: {inputs.get('bicarbonate_status', 'Not Provided')}")
+        lines.append(f"  - Sodium: {inputs.get('sodium_status', 'Not Provided')}")
+    
     if inputs.get("bone_included", False):
-        lines.append(f"  - Bone Mineral Disease: PTH {inputs['pth_status']}, Vitamin D {inputs['vitamin_d_status']}, Calcium {inputs['calcium_status']}")
+        lines.append(f"  - PTH: {inputs.get('pth_status', 'Not Provided')}")
+        lines.append(f"  - Vitamin D: {inputs.get('vitamin_d_status', 'Not Provided')}")
+        lines.append(f"  - Calcium: {inputs.get('calcium_status', 'Not Provided')}")
     
     # Medication Change Section
-    if inputs.get("med_change", "No") == "Yes":
-        lines.append(f"- Medication Change: Yes")
-        if inputs.get("med_change_types"):
-            lines.append(f"  - Medication Changes: {', '.join(inputs['med_change_types'])}")
-    else:
-        lines.append(f"- Medication Change: {inputs.get('med_change', 'No')}")
+    lines.append(f"- Medication Change: {inputs.get('med_change', 'No')}")
+    if inputs.get("med_change", "No") == "Yes" and inputs.get("med_change_types"):
+        lines.append(f"  - Medication Changes: {', '.join(inputs['med_change_types'])}")
     
-    # Additional Clinical Comments (free text)
+    # Additional Clinical Comments
     if inputs.get("additional_comments", "").strip():
         lines.append("")
         lines.append("Additional Clinical Comments:")
@@ -132,7 +150,7 @@ def generate_avs_summary(prompt: str) -> str:
                 {"role": "system", "content": "You are a knowledgeable medical assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=650,
+            max_tokens=512,
             temperature=0.7
         )
         return response.choices[0].message.content.strip()
@@ -144,17 +162,16 @@ def generate_avs_summary(prompt: str) -> str:
 def main():
     st.title("AVS Summary Generator")
     st.write("Enter patient details using the sidebar to generate an AVS summary.")
-
+    
     # Input mode selection in sidebar
     input_mode = st.sidebar.radio("Select Input Mode", ["Structured Input", "Free Text Command"])
-
+    
     if input_mode == "Structured Input":
         # Patient Details Section
         with st.sidebar.expander("Patient Details", expanded=True):
             ckd_stage = st.selectbox("CKD Stage", ["I", "II", "IIIa", "IIIb", "IV", "V", "N/A"])
             kidney_trend = st.selectbox("Kidney Function Trend", ["Stable", "Worsening", "Improving", "N/A"])
-            proteinuria_status = st.selectbox("Proteinuria Status (if applicable)", 
-                                              ["None", "Not Present", "Improving", "Worsening"])
+            proteinuria_status = st.selectbox("Proteinuria Status (if applicable)", ["None", "Not Present", "Improving", "Worsening"])
             bp_status = st.selectbox("Blood Pressure Status", ["None", "At Goal", "Above Goal"])
             bp_reading = st.text_input("Enter BP Reading", value="At Goal") if bp_status == "Above Goal" else "At Goal"
             diabetes_status = st.selectbox("Diabetes Control", ["None", "Controlled", "Uncontrolled"])
@@ -163,31 +180,66 @@ def main():
             else:
                 a1c_level = ""
         
-        # Labs Section with nested options
+        # Labs Section with Dynamic Components
         with st.sidebar.expander("Labs", expanded=True):
+            st.subheader("Anemia Labs")
             anemia_included = st.checkbox("Include Anemia Labs")
             if anemia_included:
-                hemoglobin_status = st.selectbox("Hemoglobin", ["Low", "High"])
-                iron_status = st.selectbox("Iron", ["Low", "High"])
+                hemoglobin_available = st.checkbox("Include Hemoglobin?")
+                if hemoglobin_available:
+                    hemoglobin_status = st.selectbox("Hemoglobin", ["Low", "Normal", "High"])
+                else:
+                    hemoglobin_status = "Not Provided"
+                iron_available = st.checkbox("Include Iron?")
+                if iron_available:
+                    iron_status = st.selectbox("Iron", ["Low", "Normal", "High"])
+                else:
+                    iron_status = "Not Provided"
             else:
                 hemoglobin_status = "Not Reviewed"
                 iron_status = "Not Reviewed"
-
+            
+            st.subheader("Electrolyte Labs")
             electrolyte_included = st.checkbox("Include Electrolyte Labs")
             if electrolyte_included:
-                potassium_status = st.selectbox("Potassium", ["Low", "High"])
-                bicarbonate_status = st.selectbox("Bicarbonate", ["Low", "High"])
-                sodium_status = st.selectbox("Sodium", ["Low", "High"])
+                potassium_available = st.checkbox("Include Potassium?")
+                if potassium_available:
+                    potassium_status = st.selectbox("Potassium", ["Low", "Normal", "High"])
+                else:
+                    potassium_status = "Not Provided"
+                bicarbonate_available = st.checkbox("Include Bicarbonate?")
+                if bicarbonate_available:
+                    bicarbonate_status = st.selectbox("Bicarbonate", ["Low", "Normal", "High"])
+                else:
+                    bicarbonate_status = "Not Provided"
+                sodium_available = st.checkbox("Include Sodium?")
+                if sodium_available:
+                    sodium_status = st.selectbox("Sodium", ["Low", "Normal", "High"])
+                else:
+                    sodium_status = "Not Provided"
             else:
                 potassium_status = "Not Reviewed"
                 bicarbonate_status = "Not Reviewed"
                 sodium_status = "Not Reviewed"
-
+            
+            st.subheader("Bone Mineral Disease Labs")
             bone_included = st.checkbox("Include Bone Mineral Disease Labs")
             if bone_included:
-                pth_status = st.selectbox("PTH", ["Low", "High"])
-                vitamin_d_status = st.selectbox("Vitamin D", ["Low", "High"])
-                calcium_status = st.selectbox("Calcium", ["Low", "High"])
+                pth_available = st.checkbox("Include PTH?")
+                if pth_available:
+                    pth_status = st.selectbox("PTH", ["Low", "Normal", "High"])
+                else:
+                    pth_status = "Not Provided"
+                vitamin_d_available = st.checkbox("Include Vitamin D?")
+                if vitamin_d_available:
+                    vitamin_d_status = st.selectbox("Vitamin D", ["Low", "Normal", "High"])
+                else:
+                    vitamin_d_status = "Not Provided"
+                calcium_available = st.checkbox("Include Calcium?")
+                if calcium_available:
+                    calcium_status = st.selectbox("Calcium", ["Low", "Normal", "High"])
+                else:
+                    calcium_status = "Not Provided"
             else:
                 pth_status = "Not Reviewed"
                 vitamin_d_status = "Not Reviewed"
@@ -197,13 +249,13 @@ def main():
         with st.sidebar.expander("Medication", expanded=True):
             med_change = st.radio("Medication Change?", ["No", "Yes", "N/A"])
             if med_change == "Yes":
-                meds = ["BP Medication", "Diabetes Medication", "Diuretic", "Potassium Binder", 
+                meds = ["BP Medication", "Diabetes Medication", "Diuretic", "Potassium Binder",
                         "Iron Supplement", "ESA Therapy", "Vitamin D Supplement", "Bicarbonate Supplement"]
                 med_change_types = st.multiselect("Select Medication Changes", meds)
             else:
                 med_change_types = []
         
-        # Additional Clinical Comments (Free Text Field)
+        # Additional Clinical Comments
         with st.sidebar.expander("Additional Clinical Comments", expanded=True):
             additional_comments = st.text_area("Enter any extra clinical details (e.g., dialysis discussion, referrals, transplant evaluation, etc.)", height=100)
         
@@ -232,7 +284,7 @@ def main():
                 "med_change_types": med_change_types,
                 "additional_comments": additional_comments
             }
-            prompt = build_prompt(inputs)  # Use the global build_prompt function
+            prompt = build_prompt(inputs)  # Build the prompt from inputs
             st.info("Generating AVS summary, please wait...")
             summary_text = generate_avs_summary(prompt)
             if summary_text:
@@ -258,8 +310,8 @@ def main():
                 st.write("To print only the AVS summary, use your browser's print function (Ctrl+P or Cmd+P).")
     
     else:  # Free Text Command Mode
-        st.sidebar.subheader("Free Text Command")
-        free_text_command = st.sidebar.text_area("Enter your free text command for the AVS summary:", height=200)
+        with st.sidebar.expander("Free Text Command", expanded=True):
+            free_text_command = st.text_area("Enter your free text command for the AVS summary:", height=200)
         if st.sidebar.button("Generate AVS Summary"):
             prompt = free_text_command
             st.info("Generating AVS summary from free text command, please wait...")
