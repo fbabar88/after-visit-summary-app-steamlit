@@ -150,8 +150,8 @@ def generate_avs_summary(prompt: str) -> str:
                 {"role": "system", "content": "You are a knowledgeable medical assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=512,
-            temperature=0.7
+            max_tokens=550,
+            temperature=0.8
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
